@@ -167,7 +167,7 @@ function actionFromLabel(label: string): KeyboardAction {
         return {
             type: "layer",
             mode: "momentary",
-            targetLayerId: label.includes("2") ? "nav" : "symbols",
+            targetLayerId: label.includes("2") ? "m2" : "m1",
             label,
             description: "Momentarily activates another layer while held.",
         }
@@ -212,9 +212,9 @@ export const keyboardConfig: KeyboardConfiguration = {
     },
     labels: baseLabels,
     layers: [
-        layerFromLabels("base", "Base", baseLabels, "Primary typing layer."),
-        layerFromLabels("symbols", "Symbols", symbolLabels, "Numbers, symbols, and function keys."),
-        layerFromLabels("nav", "Navigation", navLabels, "Navigation, mouse keys, media, macros, and combos."),
+        layerFromLabels("m0", "M0", baseLabels, "Primary typing layer."),
+        layerFromLabels("m1", "M1", symbolLabels, "Numbers, symbols, and function keys."),
+        layerFromLabels("m2", "M2", navLabels, "Navigation, mouse keys, media, macros, and combos."),
     ],
     macros: [
         {id: "macro-2", name: "Macro 2", steps: ["Ctrl+L", "type search", "Enter"], description: "Example macro metadata for read-only display."},
