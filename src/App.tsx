@@ -1,167 +1,111 @@
 import {useEffect, useState, type CSSProperties} from "react"
+import {keyboardConfig, type KeyboardAction, type LayoutKey} from "./keyboardConfig"
 
-type KeyConfig = {
-    x: number
-    y: number
-    labelIndex: number
-    w?: number
-    h?: number
-    rotation?: number
-    highlighted?: boolean
-    pressed?: boolean
-    legend?: string
+const actionTone: Record<KeyboardAction["type"], string> = {
+    keycode: "text-zinc-300",
+    layer: "text-cyan-200",
+    macro: "text-amber-200",
+    combo: "text-emerald-200",
+    special: "text-zinc-500",
+    tapDance: "text-fuchsia-200",
+    holdTap: "text-sky-200",
+    oneShot: "text-violet-200",
+    mouse: "text-lime-200",
+    encoder: "text-orange-200",
+    override: "text-rose-200",
 }
-
-const labels = [
-    "A",
-    "B",
-    "(",
-    ")",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-]
-
-const unit = 44
-const gap = 7
-const leftOrigin = {x: 0, y: 0}
-const rightOrigin = {x: 418, y: -6}
-
-const leftMainKeys: KeyConfig[] = [
-    {x: 0, y: 0, labelIndex: 0},
-    {x: 1, y: 0, labelIndex: 1},
-    {x: 2, y: -0.25, labelIndex: 2},
-    {x: 3, y: -0.38, labelIndex: 3},
-    {x: 4, y: -0.25, labelIndex: 4},
-    {x: 5, y: -0.12, labelIndex: 5},
-    {x: 0, y: 1, labelIndex: 6},
-    {x: 1, y: 1, labelIndex: 7},
-    {x: 2, y: 0.78, labelIndex: 8},
-    {x: 3, y: 0.66, labelIndex: 9},
-    {x: 4, y: 0.78, labelIndex: 10},
-    {x: 5, y: 0.9, labelIndex: 11},
-    {x: 0, y: 2, labelIndex: 12},
-    {x: 1, y: 2, labelIndex: 13},
-    {x: 2, y: 1.82, labelIndex: 14},
-    {x: 3, y: 1.7, labelIndex: 15},
-    {x: 4, y: 1.82, labelIndex: 16},
-    {x: 5, y: 1.95, labelIndex: 17},
-    {x: 6.05, y: 0.42, labelIndex: 18},
-    {x: 6.05, y: 1.42, labelIndex: 19},
-]
-
-const leftThumbKeys: KeyConfig[] = [
-    {x: 3.55, y: 3.04, labelIndex: 20},
-    {x: 4.55, y: 3.08, labelIndex: 21, rotation: 15},
-    {x: 5.55, y: 3.12, labelIndex: 22, w: 0.92, h: 1.42, rotation: 29},
-]
-
-const rightMainKeys: KeyConfig[] = leftMainKeys.map((key, index) => ({
-    ...key,
-    x: 6.05 - key.x,
-    y: key.y,
-    labelIndex: 26 + index,
-}))
-
-const rightThumbKeys: KeyConfig[] = [
-    {x: 1.26, y: 3.14, labelIndex: 46, w: 0.92, h: 1.42, rotation: -29},
-    {x: 2.26, y: 3.1, labelIndex: 47, rotation: -15},
-    {x: 3.26, y: 3.05, labelIndex: 48},
-]
-
-const leftKeys = [...leftMainKeys, ...leftThumbKeys]
-const rightKeys = [...rightMainKeys, ...rightThumbKeys]
 
 type KeyProps = {
-    keyData: KeyConfig
+    layoutKey: LayoutKey
+    action?: KeyboardAction
     origin: {x: number; y: number}
+    unit: number
+    gap: number
+    selected: boolean
+    onSelect: () => void
 }
 
-function Key({keyData, origin}: KeyProps) {
-    const width = unit * (keyData.w ?? 1)
-    const height = unit * (keyData.h ?? 1)
-    const label = labels[keyData.labelIndex] ?? ""
+function Key({layoutKey, action, origin, unit, gap, selected, onSelect}: KeyProps) {
+    const width = unit * (layoutKey.w ?? 1)
+    const height = unit * (layoutKey.h ?? 1)
+    const label = action?.label ?? ""
+    const tone = action ? actionTone[action.type] : "text-zinc-600"
 
     return (
-        <div
-            className="absolute grid place-items-center rounded-[5px] border border-white/[0.055] bg-[#343434]/85 text-[11px] font-medium text-zinc-500 shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] hover:text-zinc-300 data-[highlighted=true]:border-teal-300/40 data-[highlighted=true]:bg-teal-400/15 data-[pressed=true]:translate-y-px data-[pressed=true]:bg-[#262626]"
-            data-highlighted={keyData.highlighted ? "true" : undefined}
-            data-pressed={keyData.pressed ? "true" : undefined}
+        <button
+            type="button"
+            aria-label={label ? `${layoutKey.id}: ${label}` : `${layoutKey.id}: empty`}
+            title={action?.description ?? "Empty key slot"}
+            className={`absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-[10px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300/70 ${tone} ${
+                selected ? "border-cyan-300/50 bg-cyan-400/15" : "border-white/[0.055]"
+            }`}
+            onClick={onSelect}
             style={{
-                left: origin.x + keyData.x * (unit + gap),
-                top: origin.y + keyData.y * (unit + gap),
+                left: origin.x + layoutKey.x * (unit + gap),
+                top: origin.y + layoutKey.y * (unit + gap),
                 width,
                 height,
-                transform: `rotate(${keyData.rotation ?? 0}deg)`,
+                transform: `rotate(${layoutKey.rotation ?? 0}deg)`,
             }}
         >
-            <span className="leading-none">{label}</span>
-            {keyData.legend ? (
+            <span className="max-w-full px-1 leading-none">{label}</span>
+            {action?.legend ? (
                 <span className="absolute bottom-1 right-1 text-[8px] uppercase tracking-wide text-zinc-600">
-                    {keyData.legend}
+                    {action.legend}
                 </span>
             ) : null}
-        </div>
+        </button>
     )
 }
 
-function KeyboardHalf({keys, origin}: {keys: KeyConfig[]; origin: {x: number; y: number}}) {
-    return keys.map((keyData) => (
-        <Key key={`${origin.x}-${keyData.x}-${keyData.y}-${keyData.labelIndex}`} keyData={keyData} origin={origin}/>
-    ))
+function formatActionType(type: KeyboardAction["type"]) {
+    return type.replace(/[A-Z]/g, (letter) => ` ${letter}`).replace(/^./, (letter) => letter.toUpperCase())
+}
+
+function describeAction(action?: KeyboardAction) {
+    if (!action) {
+        return "No action assigned for this key on the selected layer."
+    }
+
+    if (action.description) {
+        return action.description
+    }
+
+    switch (action.type) {
+        case "keycode":
+            return `Sends ${action.code}.`
+        case "layer":
+            return `${action.mode} access to layer ${action.targetLayerId}.`
+        case "macro":
+            return `Displays macro ${action.macroId}.`
+        case "combo":
+            return `Displays combo ${action.comboId}.`
+        case "special":
+            return action.value
+        default:
+            return "Advanced keyboard action metadata."
+    }
+}
+
+function Panel({title, children}: {title: string; children: React.ReactNode}) {
+    return (
+        <section className="rounded-md border border-white/[0.06] bg-[#333333]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{title}</h2>
+            {children}
+        </section>
+    )
 }
 
 export default function Home() {
     const [keyboardScale, setKeyboardScale] = useState(1)
+    const [activeLayerId, setActiveLayerId] = useState(keyboardConfig.layers[0]?.id ?? "")
+    const [selectedKeyId, setSelectedKeyId] = useState(keyboardConfig.layout.halves[0]?.keys[0]?.id ?? "")
+    const activeLayer = keyboardConfig.layers.find((layer) => layer.id === activeLayerId) ?? keyboardConfig.layers[0]
+    const selectedAction = activeLayer?.keys[selectedKeyId]
 
     useEffect(() => {
         const updateScale = () => {
-            setKeyboardScale(Math.min(1, Math.max(0.42, (window.innerWidth - 32) / 760)))
+            setKeyboardScale(Math.min(1, Math.max(0.42, (window.innerWidth - 32) / keyboardConfig.layout.width)))
         }
 
         updateScale()
@@ -171,8 +115,8 @@ export default function Home() {
     }, [])
 
     const frameStyle: CSSProperties = {
-        width: 760 * keyboardScale,
-        height: 284 * keyboardScale,
+        width: keyboardConfig.layout.width * keyboardScale,
+        height: keyboardConfig.layout.height * keyboardScale,
     }
     const keyboardStyle: CSSProperties = {
         transform: `scale(${keyboardScale})`,
@@ -181,13 +125,96 @@ export default function Home() {
 
     return (
         <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200">
-            <div className="flex min-h-screen items-center justify-center px-4">
-                <div style={frameStyle}>
-                    <div className="relative h-[284px] w-[760px]" style={keyboardStyle}>
-                        <KeyboardHalf keys={leftKeys} origin={leftOrigin}/>
-                        <KeyboardHalf keys={rightKeys} origin={rightOrigin}/>
+            <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center gap-6 px-4 py-6 lg:grid lg:grid-cols-[1fr_290px] lg:items-center">
+                <div className="flex min-w-0 flex-col items-center gap-5">
+                    <header className="w-full max-w-[760px]">
+                        <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Configuration viewer</p>
+                        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                                <h1 className="text-xl font-semibold text-zinc-100">{keyboardConfig.name}</h1>
+                                <p className="mt-1 text-sm text-zinc-500">{activeLayer?.description}</p>
+                            </div>
+                            <div className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-100">
+                                Layer: {activeLayer?.name}
+                            </div>
+                        </div>
+                    </header>
+
+                    <div style={frameStyle}>
+                        <div className="relative h-[284px] w-[760px]" style={keyboardStyle}>
+                            {keyboardConfig.layout.halves.map((half) =>
+                                half.keys.map((layoutKey) => (
+                                    <Key
+                                        key={layoutKey.id}
+                                        layoutKey={layoutKey}
+                                        action={activeLayer?.keys[layoutKey.id]}
+                                        origin={half.origin}
+                                        unit={keyboardConfig.layout.unit}
+                                        gap={keyboardConfig.layout.gap}
+                                        selected={selectedKeyId === layoutKey.id}
+                                        onSelect={() => setSelectedKeyId(layoutKey.id)}
+                                    />
+                                )),
+                            )}
+                        </div>
                     </div>
                 </div>
+
+                <aside className="grid gap-3 lg:self-center">
+                    <Panel title="Layers">
+                        <div className="grid gap-2">
+                            {keyboardConfig.layers.map((layer) => (
+                                <button
+                                    key={layer.id}
+                                    type="button"
+                                    className={`rounded-md border px-3 py-2 text-left text-sm transition hover:border-white/15 hover:bg-white/[0.04] ${
+                                        activeLayerId === layer.id
+                                            ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                                            : "border-white/[0.06] bg-black/10 text-zinc-400"
+                                    }`}
+                                    onClick={() => setActiveLayerId(layer.id)}
+                                >
+                                    <span className="block font-medium">{layer.name}</span>
+                                    <span className="mt-0.5 block text-xs text-zinc-500">{layer.description}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </Panel>
+
+                    <Panel title="Action details">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="text-zinc-500">Key</span>
+                                <span className="font-medium text-zinc-200">{selectedKeyId}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="text-zinc-500">Type</span>
+                                <span className="font-medium text-zinc-200">{selectedAction ? formatActionType(selectedAction.type) : "Empty"}</span>
+                            </div>
+                            <div className="rounded border border-white/[0.06] bg-black/10 p-3 text-zinc-400">
+                                <p className="text-base font-semibold text-zinc-100">{selectedAction?.label || "Empty"}</p>
+                                <p className="mt-1 text-xs leading-relaxed">{describeAction(selectedAction)}</p>
+                            </div>
+                        </div>
+                    </Panel>
+
+                    <Panel title="Inspectors">
+                        <div className="grid gap-3 text-xs text-zinc-500">
+                            <div>
+                                <p className="font-medium text-zinc-300">Macros</p>
+                                <p>{keyboardConfig.macros?.map((macro) => macro.name).join(", ") || "None"}</p>
+                            </div>
+                            <div>
+                                <p className="font-medium text-zinc-300">Combos</p>
+                                <p>{keyboardConfig.combos?.map((combo) => combo.name).join(", ") || "None"}</p>
+                            </div>
+                            <div>
+                                <p className="font-medium text-zinc-300">Special actions</p>
+                                <p>{keyboardConfig.specialActions?.map((action) => action.name).join(", ") || "None"}</p>
+                            </div>
+                        </div>
+                    </Panel>
+                </aside>
             </div>
         </main>
     )
