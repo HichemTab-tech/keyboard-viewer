@@ -1,137 +1,194 @@
-import {Button} from "@/components/ui/button"
-import {Card, CardContent} from "@/components/ui/card"
-import {Github, Linkedin, Twitter, Mail, ExternalLink} from "lucide-react"
+import {useEffect, useState, type CSSProperties} from "react"
+
+type KeyConfig = {
+    x: number
+    y: number
+    labelIndex: number
+    w?: number
+    h?: number
+    rotation?: number
+    highlighted?: boolean
+    pressed?: boolean
+    legend?: string
+}
+
+const labels = [
+    "A",
+    "B",
+    "(",
+    ")",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+]
+
+const unit = 44
+const gap = 7
+const leftOrigin = {x: 0, y: 0}
+const rightOrigin = {x: 418, y: -6}
+
+const leftMainKeys: KeyConfig[] = [
+    {x: 0, y: 0, labelIndex: 0},
+    {x: 1, y: 0, labelIndex: 1},
+    {x: 2, y: -0.25, labelIndex: 2},
+    {x: 3, y: -0.38, labelIndex: 3},
+    {x: 4, y: -0.25, labelIndex: 4},
+    {x: 5, y: -0.12, labelIndex: 5},
+    {x: 0, y: 1, labelIndex: 6},
+    {x: 1, y: 1, labelIndex: 7},
+    {x: 2, y: 0.78, labelIndex: 8},
+    {x: 3, y: 0.66, labelIndex: 9},
+    {x: 4, y: 0.78, labelIndex: 10},
+    {x: 5, y: 0.9, labelIndex: 11},
+    {x: 0, y: 2, labelIndex: 12},
+    {x: 1, y: 2, labelIndex: 13},
+    {x: 2, y: 1.82, labelIndex: 14},
+    {x: 3, y: 1.7, labelIndex: 15},
+    {x: 4, y: 1.82, labelIndex: 16},
+    {x: 5, y: 1.95, labelIndex: 17},
+    {x: 6.05, y: 0.42, labelIndex: 18},
+    {x: 6.05, y: 1.42, labelIndex: 19},
+]
+
+const leftThumbKeys: KeyConfig[] = [
+    {x: 3.55, y: 3.04, labelIndex: 20},
+    {x: 4.55, y: 3.08, labelIndex: 21, rotation: 15},
+    {x: 5.55, y: 3.12, labelIndex: 22, w: 0.92, h: 1.42, rotation: 29},
+]
+
+const rightMainKeys: KeyConfig[] = leftMainKeys.map((key, index) => ({
+    ...key,
+    x: 6.05 - key.x,
+    y: key.y,
+    labelIndex: 26 + index,
+}))
+
+const rightThumbKeys: KeyConfig[] = [
+    {x: 1.26, y: 3.14, labelIndex: 46, w: 0.92, h: 1.42, rotation: -29},
+    {x: 2.26, y: 3.1, labelIndex: 47, rotation: -15},
+    {x: 3.26, y: 3.05, labelIndex: 48},
+]
+
+const leftKeys = [...leftMainKeys, ...leftThumbKeys]
+const rightKeys = [...rightMainKeys, ...rightThumbKeys]
+
+type KeyProps = {
+    keyData: KeyConfig
+    origin: {x: number; y: number}
+}
+
+function Key({keyData, origin}: KeyProps) {
+    const width = unit * (keyData.w ?? 1)
+    const height = unit * (keyData.h ?? 1)
+    const label = labels[keyData.labelIndex] ?? ""
+
+    return (
+        <div
+            className="absolute grid place-items-center rounded-[5px] border border-white/[0.055] bg-[#343434]/85 text-[11px] font-medium text-zinc-500 shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] hover:text-zinc-300 data-[highlighted=true]:border-teal-300/40 data-[highlighted=true]:bg-teal-400/15 data-[pressed=true]:translate-y-px data-[pressed=true]:bg-[#262626]"
+            data-highlighted={keyData.highlighted ? "true" : undefined}
+            data-pressed={keyData.pressed ? "true" : undefined}
+            style={{
+                left: origin.x + keyData.x * (unit + gap),
+                top: origin.y + keyData.y * (unit + gap),
+                width,
+                height,
+                transform: `rotate(${keyData.rotation ?? 0}deg)`,
+            }}
+        >
+            <span className="leading-none">{label}</span>
+            {keyData.legend ? (
+                <span className="absolute bottom-1 right-1 text-[8px] uppercase tracking-wide text-zinc-600">
+                    {keyData.legend}
+                </span>
+            ) : null}
+        </div>
+    )
+}
+
+function KeyboardHalf({keys, origin}: {keys: KeyConfig[]; origin: {x: number; y: number}}) {
+    return keys.map((keyData) => (
+        <Key key={`${origin.x}-${keyData.x}-${keyData.y}-${keyData.labelIndex}`} keyData={keyData} origin={origin}/>
+    ))
+}
 
 export default function Home() {
+    const [keyboardScale, setKeyboardScale] = useState(1)
+
+    useEffect(() => {
+        const updateScale = () => {
+            setKeyboardScale(Math.min(1, Math.max(0.42, (window.innerWidth - 32) / 760)))
+        }
+
+        updateScale()
+        window.addEventListener("resize", updateScale)
+
+        return () => window.removeEventListener("resize", updateScale)
+    }, [])
+
+    const frameStyle: CSSProperties = {
+        width: 760 * keyboardScale,
+        height: 284 * keyboardScale,
+    }
+    const keyboardStyle: CSSProperties = {
+        transform: `scale(${keyboardScale})`,
+        transformOrigin: "top left",
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-            <div className="container mx-auto px-4 py-16">
-                <div className="max-w-4xl mx-auto text-center">
-                    {/* Header */}
-                    <div className="mb-12">
-                        <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                            HichemTab-tech
-                        </h1>
-                        <p className="text-xl md:text-2xl text-muted-foreground mb-8">React + Vite + React Router + shadcn/ui
-                            Template</p>
-                        <div className="w-24 h-1 bg-primary mx-auto rounded-full"></div>
-                    </div>
-
-                    {/* Main Content */}
-                    <Card className="mb-12 border-0 shadow-lg">
-                        <CardContent className="p-8 md:p-12">
-                            <div className="grid md:grid-cols-2 gap-8 items-center">
-                                <div className="space-y-6">
-                                    <div className="text-left">
-                                        <h2 className="text-2xl font-semibold mb-4">Welcome to my template!</h2>
-                                        <p className="text-muted-foreground leading-relaxed">
-                                            This template was created following the{" "}
-                                            <a
-                                                href="https://ui.shadcn.com/docs/installation/vite"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary hover:underline"
-                                            >
-                                                 shadcn/ui Vite
-                                            </a>
-
-                                            {" "}&{" "}
-
-                                            <a
-                                                href="https://reactrouter.com/start/declarative/routing"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary hover:underline"
-                                            >
-                                                react router
-                                            </a>
-
-                                            {" "}installation guide
-
-                                            . Nothing extra added - just the ready setup so you don't have to go through
-                                            the installation
-                                            steps yourself!
-                                        </p>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-3">
-                                        <span
-                                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">React</span>
-                                        <span
-                                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">Vite</span>
-                                        <span
-                                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      shadcn/ui
-                    </span>
-                                        <span
-                                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      Tailwind CSS
-                    </span>
-                                        <span
-                                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      TypeScript
-                    </span>
-                                        <span
-                                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      React Router
-                    </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-center">
-                                    <div
-                                        className="w-48 h-48 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full flex items-center justify-center">
-                                        <img alt="HichemTab-tech's pdp" src="https://www.hichemtab-tech.me/pdp.jpg"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Links Section */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                        <Button variant="outline" size="lg" className="h-16 flex-col gap-2 bg-transparent" asChild>
-                            <a href="https://github.com/HichemTab-tech" target="_blank" rel="noopener noreferrer">
-                                <Github className="w-6 h-6"/>
-                                <span>GitHub</span>
-                            </a>
-                        </Button>
-
-                        <Button variant="outline" size="lg" className="h-16 flex-col gap-2 bg-transparent" asChild>
-                            <a href="https://www.linkedin.com/in/hichem-taboukouyout" target="_blank" rel="noopener noreferrer">
-                                <Linkedin className="w-6 h-6"/>
-                                <span>LinkedIn</span>
-                            </a>
-                        </Button>
-
-                        <Button variant="outline" size="lg" className="h-16 flex-col gap-2 bg-transparent" asChild>
-                            <a href="https://twitter.com/hichemtab1" target="_blank" rel="noopener noreferrer">
-                                <Twitter className="w-6 h-6"/>
-                                <span>Twitter</span>
-                            </a>
-                        </Button>
-
-                        <Button variant="outline" size="lg" className="h-16 flex-col gap-2 bg-transparent" asChild>
-                            <a href="mailto:hichem.taboukouyout@hichemtab-tech.me">
-                                <Mail className="w-6 h-6"/>
-                                <span>Email</span>
-                            </a>
-                        </Button>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="text-center text-muted-foreground">
-                        <p className="flex items-center justify-center gap-2 text-sm">
-                            Built with ❤️ by HichemTab-tech
-                            <ExternalLink className="w-4 h-4"/>
-                        </p>
-                        <p className="text-xs mt-2">
-                            Get started by editing <code
-                            className="bg-muted px-2 py-1 rounded text-xs">app/page.tsx</code>
-                        </p>
+        <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200">
+            <div className="flex min-h-screen items-center justify-center px-4">
+                <div style={frameStyle}>
+                    <div className="relative h-[284px] w-[760px]" style={keyboardStyle}>
+                        <KeyboardHalf keys={leftKeys} origin={leftOrigin}/>
+                        <KeyboardHalf keys={rightKeys} origin={rightOrigin}/>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     )
 }
