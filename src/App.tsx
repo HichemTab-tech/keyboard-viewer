@@ -438,7 +438,7 @@ export default function Home() {
                                 return (
                                 <section key={layer.id} className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
                                     {layer.description ? <p className="mb-3 text-xs text-zinc-500">{layer.description}</p> : null}
-                                    <KeyboardView config={viewerConfig} layer={layer} scale={0.72}/>
+                                    <KeyboardView config={viewerConfig} layer={layer} scale={0.82}/>
                                 </section>
                                 )
                             })}
