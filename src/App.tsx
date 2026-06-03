@@ -328,7 +328,7 @@ export default function Home() {
         <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200 print:overflow-visible">
             <div className={`mx-auto flex min-h-screen w-full flex-col justify-center gap-6 px-4 py-6 print:block print:min-h-0 print:max-w-none print:p-0 ${
                 mode === "preview" && isPreviewSidebarHidden
-                    ? "max-w-[1440px]"
+                    ? "max-w-[2400px]"
                     : "max-w-6xl lg:grid lg:grid-cols-[1fr_300px] lg:items-center"
             }`}>
                 <div className="flex min-w-0 flex-col items-center gap-5 print:block">
@@ -379,7 +379,7 @@ export default function Home() {
                             ref={previewRef}
                             className={`grid w-full gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:grid-cols-1 print:p-0 ${
                                 previewUsesGrid
-                                    ? "max-w-[1400px] grid-cols-1 md:grid-cols-2 xl:grid-cols-2"
+                                    ? "max-w-[2100px] grid-cols-1 md:grid-cols-2 2xl:grid-cols-3"
                                     : "max-w-[900px] grid-cols-1"
                             }`}
                         >
@@ -392,7 +392,7 @@ export default function Home() {
                                 )
                             })}
                             {viewerConfig.macros && viewerConfig.macros.length > 0 ? (
-                                <section className={`rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid ${previewUsesGrid ? "md:col-span-2" : ""}`}>
+                                <section className={`rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid ${previewUsesGrid ? "md:col-span-2 2xl:col-span-3" : ""}`}>
                                     <h2 className="mb-2 text-sm font-semibold text-zinc-100">Macros</h2>
                                     <div className="grid gap-2 text-xs text-zinc-300">
                                         {viewerConfig.macros.map((macro) => (
