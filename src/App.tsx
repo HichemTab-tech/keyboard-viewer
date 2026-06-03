@@ -207,6 +207,7 @@ export default function Home() {
     const [selectedKeyId, setSelectedKeyId] = useState(keyboardConfig.layout.halves[0]?.keys[0]?.id ?? "")
     const [status, setStatus] = useState("Editing bundled sample configuration.")
     const [previewLayerIds, setPreviewLayerIds] = useState<string[]>(() => keyboardConfig.layers.map((layer) => layer.id))
+    const [isPreviewSidebarHidden, setIsPreviewSidebarHidden] = useState(false)
     const previewRef = useRef<HTMLDivElement>(null)
 
     const activeLayer = viewerConfig.layers.find((layer) => layer.id === activeLayerId) ?? viewerConfig.layers[0]
@@ -214,6 +215,7 @@ export default function Home() {
     const selectedAction = activeLayer?.keys[selectedKeyId]
     const selectedMacro = getMacroDetails(viewerConfig, selectedAction)
     const previewLayers = viewerConfig.layers.filter((layer) => previewLayerIds.includes(layer.id))
+    const previewUsesGrid = mode === "preview" && isPreviewSidebarHidden
 
     useEffect(() => {
         const updateScale = () => {
@@ -323,7 +325,11 @@ export default function Home() {
 
     return (
         <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200 print:overflow-visible">
-            <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center gap-6 px-4 py-6 lg:grid lg:grid-cols-[1fr_300px] lg:items-center print:block print:min-h-0 print:max-w-none print:p-0">
+            <div className={`mx-auto flex min-h-screen w-full flex-col justify-center gap-6 px-4 py-6 print:block print:min-h-0 print:max-w-none print:p-0 ${
+                mode === "preview" && isPreviewSidebarHidden
+                    ? "max-w-[1440px]"
+                    : "max-w-6xl lg:grid lg:grid-cols-[1fr_300px] lg:items-center"
+            }`}>
                 <div className="flex min-w-0 flex-col items-center gap-5 print:block">
                     <header className="w-full max-w-[760px] print:hidden">
                         <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Keyboard layout viewer</p>
@@ -346,6 +352,15 @@ export default function Home() {
                                     </button>
                                 ))}
                             </div>
+                            {mode === "preview" ? (
+                                <button
+                                    type="button"
+                                    className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]"
+                                    onClick={() => setIsPreviewSidebarHidden((current) => !current)}
+                                >
+                                    {isPreviewSidebarHidden ? "Show sidebar" : "Hide sidebar"}
+                                </button>
+                            ) : null}
                         </div>
                     </header>
 
@@ -359,7 +374,14 @@ export default function Home() {
                             interactive
                         />
                     ) : (
-                        <div ref={previewRef} className="grid w-full max-w-[900px] gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:p-0">
+                        <div
+                            ref={previewRef}
+                            className={`grid w-full gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:grid-cols-1 print:p-0 ${
+                                previewUsesGrid
+                                    ? "max-w-[1400px] grid-cols-1 md:grid-cols-2 xl:grid-cols-2"
+                                    : "max-w-[900px] grid-cols-1"
+                            }`}
+                        >
                             {previewLayers.map((layer) => {
                                 const index = viewerConfig.layers.findIndex((candidate) => candidate.id === layer.id)
                                 return (
@@ -368,12 +390,12 @@ export default function Home() {
                                         <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
                                         {layer.description ? <p className="text-xs text-zinc-500">{layer.description}</p> : null}
                                     </div>
-                                    <KeyboardView config={viewerConfig} layer={layer} scale={0.78}/>
+                                    <KeyboardView config={viewerConfig} layer={layer} scale={0.72}/>
                                 </section>
                                 )
                             })}
                             {viewerConfig.macros && viewerConfig.macros.length > 0 ? (
-                                <section className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
+                                <section className={`rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid ${previewUsesGrid ? "md:col-span-2" : ""}`}>
                                     <h2 className="mb-2 text-sm font-semibold text-zinc-100">Macros</h2>
                                     <div className="grid gap-2 text-xs text-zinc-300">
                                         {viewerConfig.macros.map((macro) => (
@@ -389,7 +411,7 @@ export default function Home() {
                     )}
                 </div>
 
-                <aside className="grid gap-3 lg:self-center print:hidden">
+                <aside className={`grid gap-3 lg:self-center print:hidden ${mode === "preview" && isPreviewSidebarHidden ? "hidden" : ""}`}>
                     <Panel title="Config">
                         <div className="grid gap-2 text-xs text-zinc-500">
                             <div className="grid grid-cols-2 gap-2">
