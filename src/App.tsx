@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState, type CSSProperties, type ReactNode} from "react"
 import {toPng} from "html-to-image"
 import {keyboardConfig, type KeyboardAction, type KeyboardConfiguration, type KeyboardLayer, type LayoutKey} from "./keyboardConfig"
+import {convertVialToKeyboardConfig, isVialBackup} from "./vialImport"
 
 type Mode = "edit" | "preview"
 
@@ -175,6 +176,18 @@ function Panel({title, children}: {title: string; children: ReactNode}) {
     )
 }
 
+function isKeyboardConfiguration(value: unknown): value is KeyboardConfiguration {
+    return typeof value === "object"
+        && value !== null
+        && "layout" in value
+        && typeof value.layout === "object"
+        && value.layout !== null
+        && "halves" in value.layout
+        && Array.isArray(value.layout.halves)
+        && "layers" in value
+        && Array.isArray(value.layers)
+}
+
 export default function Home() {
     const [viewerConfig, setViewerConfig] = useState<KeyboardConfiguration>(keyboardConfig)
     const [mode, setMode] = useState<Mode>("edit")
@@ -245,16 +258,17 @@ export default function Home() {
         }
 
         try {
-            const parsed = JSON.parse(await file.text()) as KeyboardConfiguration
+            const parsed = JSON.parse(await file.text()) as unknown
+            const nextConfig = isVialBackup(parsed) ? convertVialToKeyboardConfig(parsed, keyboardConfig, file.name) : parsed
 
-            if (!parsed.layout?.halves || !Array.isArray(parsed.layers)) {
+            if (!isKeyboardConfiguration(nextConfig)) {
                 throw new Error("This JSON does not look like a keyboard layout export.")
             }
 
-            setViewerConfig(parsed)
-            setActiveLayerId(parsed.layers[0]?.id ?? "")
-            setSelectedKeyId(parsed.layout.halves[0]?.keys[0]?.id ?? "")
-            setStatus(`Imported ${file.name}.`)
+            setViewerConfig(nextConfig)
+            setActiveLayerId(nextConfig.layers[0]?.id ?? "")
+            setSelectedKeyId(nextConfig.layout.halves[0]?.keys[0]?.id ?? "")
+            setStatus(`Imported ${file.name}.${isVialBackup(parsed) ? " Converted from Vial backup." : ""}`)
         } catch (error) {
             setStatus(error instanceof Error ? error.message : "Could not import this file.")
         }
@@ -341,7 +355,7 @@ export default function Home() {
                                 </button>
                                 <label className="cursor-pointer rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-center text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]">
                                     Import JSON
-                                    <input className="sr-only" type="file" accept=".json,application/json" onChange={(event) => void importConfig(event.currentTarget.files?.[0])}/>
+                                    <input className="sr-only" type="file" accept=".json,application/json,.vil" onChange={(event) => void importConfig(event.currentTarget.files?.[0])}/>
                                 </label>
                             </div>
                             <p>{status}</p>
