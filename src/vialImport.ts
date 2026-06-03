@@ -155,6 +155,11 @@ const azertyAltGrMap: Record<string, string> = {
     KC_EQL: "}",
 }
 
+const readableLabelOverrides: Record<string, string> = {
+    "C_S(KC_TAB)": "<< Pg",
+    "LCTL(KC_TAB)": "Pg >>"
+}
+
 function isRecord(value: unknown): value is UnknownRecord {
     return typeof value === "object" && value !== null && !Array.isArray(value)
 }
@@ -164,6 +169,11 @@ function baseLabel(code: string) {
 }
 
 function readableLabel(raw: string): string {
+    const override = readableLabelOverrides[raw]
+    if (override) {
+        return override
+    }
+
     const shiftMatch = raw.match(/^(?:LSFT|RSFT|S)\((.+)\)$/)
     if (shiftMatch) {
         const inner = shiftMatch[1]
