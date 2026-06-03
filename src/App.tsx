@@ -4,6 +4,7 @@ import {keyboardConfig, type KeyboardAction, type KeyboardConfiguration, type Ke
 import {convertVialToKeyboardConfig, isVialBackup} from "./vialImport"
 
 type Mode = "edit" | "preview"
+const LOCAL_STORAGE_CONFIG_KEY = "keyboard-viewer.config"
 
 const actionTone: Record<KeyboardAction["type"], string> = {
     keycode: "text-zinc-300",
@@ -200,16 +201,44 @@ function isKeyboardConfiguration(value: unknown): value is KeyboardConfiguration
         && Array.isArray(value.layers)
 }
 
+function loadPersistedConfig() {
+    if (typeof window === "undefined") {
+        return {config: keyboardConfig, restored: false}
+    }
+
+    try {
+        const raw = window.localStorage.getItem(LOCAL_STORAGE_CONFIG_KEY)
+        if (!raw) {
+            return {config: keyboardConfig, restored: false}
+        }
+
+        const parsed = JSON.parse(raw) as unknown
+        if (!isKeyboardConfiguration(parsed)) {
+            return {config: keyboardConfig, restored: false}
+        }
+
+        return {config: parsed, restored: true}
+    } catch {
+        return {config: keyboardConfig, restored: false}
+    }
+}
+
 export default function Home() {
-    const [viewerConfig, setViewerConfig] = useState<KeyboardConfiguration>(keyboardConfig)
+    const initialStateRef = useRef(loadPersistedConfig())
+    const [viewerConfig, setViewerConfig] = useState<KeyboardConfiguration>(initialStateRef.current.config)
     const [mode, setMode] = useState<Mode>("edit")
     const [keyboardScale, setKeyboardScale] = useState(1)
-    const [activeLayerId, setActiveLayerId] = useState(keyboardConfig.layers[0]?.id ?? "")
-    const [selectedKeyId, setSelectedKeyId] = useState(keyboardConfig.layout.halves[0]?.keys[0]?.id ?? "")
-    const [status, setStatus] = useState("Editing bundled sample configuration.")
-    const [previewLayerIds, setPreviewLayerIds] = useState<string[]>(() => keyboardConfig.layers.map((layer) => layer.id))
+    const [activeLayerId, setActiveLayerId] = useState(initialStateRef.current.config.layers[0]?.id ?? "")
+    const [selectedKeyId, setSelectedKeyId] = useState(initialStateRef.current.config.layout.halves[0]?.keys[0]?.id ?? "")
+    const [status, setStatus] = useState(
+        initialStateRef.current.restored
+            ? "Loaded saved layout from local storage."
+            : "Editing bundled sample configuration.",
+    )
+    const [previewLayerIds, setPreviewLayerIds] = useState<string[]>(() => initialStateRef.current.config.layers.map((layer) => layer.id))
     const [isPreviewSidebarHidden, setIsPreviewSidebarHidden] = useState(false)
     const previewRef = useRef<HTMLDivElement>(null)
+    const hasHydratedConfigRef = useRef(false)
 
     const activeLayer = viewerConfig.layers.find((layer) => layer.id === activeLayerId) ?? viewerConfig.layers[0]
     const activeLayerIndex = Math.max(0, viewerConfig.layers.findIndex((layer) => layer.id === activeLayer?.id))
@@ -228,6 +257,19 @@ export default function Home() {
 
         return () => window.removeEventListener("resize", updateScale)
     }, [viewerConfig.layout.width])
+
+    useEffect(() => {
+        if (!hasHydratedConfigRef.current) {
+            hasHydratedConfigRef.current = true
+            return
+        }
+
+        try {
+            window.localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(viewerConfig))
+        } catch {
+            setStatus("Could not save layout to local storage.")
+        }
+    }, [viewerConfig])
 
     function updateLayer(layerId: string, updater: (layer: KeyboardLayer) => KeyboardLayer) {
         setViewerConfig((current) => ({
@@ -316,6 +358,15 @@ export default function Home() {
 
         downloadDataUrl("keyboard-preview.png", dataUrl)
         setStatus("Exported keyboard-preview.png.")
+    }
+
+    function clearPersistedConfig() {
+        try {
+            window.localStorage.removeItem(LOCAL_STORAGE_CONFIG_KEY)
+            setStatus("Deleted saved local data.")
+        } catch {
+            setStatus("Could not delete local saved data.")
+        }
     }
 
     function exportPreviewPdf() {
@@ -420,6 +471,13 @@ export default function Home() {
                                     <input className="sr-only" type="file" accept=".json,application/json,.vil" onChange={(event) => void importConfig(event.currentTarget.files?.[0])}/>
                                 </label>
                             </div>
+                            <button
+                                type="button"
+                                className="rounded-md border border-rose-300/25 bg-rose-300/10 px-3 py-2 text-sm text-rose-100 transition hover:border-rose-300/45 hover:bg-rose-300/15"
+                                onClick={clearPersistedConfig}
+                            >
+                                Delete saved local data
+                            </button>
                             <p>{status}</p>
                         </div>
                     </Panel>
