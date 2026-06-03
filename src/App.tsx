@@ -105,7 +105,7 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
     const label = action?.label ?? ""
     const tone = action ? actionTone[action.type] : "text-zinc-600"
     const centerGuideTone = centerGuideKeyIds.has(layoutKey.id) ? "ring-1 ring-amber-300/60 ring-inset" : ""
-    const commonClass = `absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-[10px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out ${tone} ${
+    const commonClass = `absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-[11px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out ${tone} ${
         selected ? "border-cyan-300/50 bg-cyan-400/15" : "border-white/[0.055]"
     } ${centerGuideTone} ${interactive ? "hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300/70" : ""}`
     const style: CSSProperties = {
@@ -119,7 +119,7 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
     if (!interactive) {
         return (
             <div className={commonClass} style={style} title={action?.description}>
-                <span className="max-w-full px-1 leading-none">{label}</span>
+                <span className="max-w-full px-1 leading-tight">{label}</span>
             </div>
         )
     }
@@ -133,7 +133,7 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
             style={style}
             title={action?.description ?? "Empty key"}
         >
-            <span className="max-w-full px-1 leading-none">{label}</span>
+            <span className="max-w-full px-1 leading-tight">{label}</span>
         </button>
     )
 }
@@ -148,15 +148,16 @@ type KeyboardViewProps = {
 }
 
 function KeyboardView({config, layer, selectedKeyId, onSelectKey, scale = 1, interactive = false}: KeyboardViewProps) {
+    const effectiveScale = scale * 1.06
     const style: CSSProperties = {
         width: config.layout.width,
         height: config.layout.height,
-        transform: `scale(${scale})`,
+        transform: `scale(${effectiveScale})`,
         transformOrigin: "top left",
     }
 
     return (
-        <div style={{width: config.layout.width * scale, height: config.layout.height * scale}}>
+        <div style={{width: config.layout.width * effectiveScale, height: config.layout.height * effectiveScale}}>
             <div className="relative" style={style}>
                 {config.layout.halves.map((half) =>
                     half.keys.map((layoutKey) => (
@@ -383,13 +384,9 @@ export default function Home() {
                             }`}
                         >
                             {previewLayers.map((layer) => {
-                                const index = viewerConfig.layers.findIndex((candidate) => candidate.id === layer.id)
                                 return (
                                 <section key={layer.id} className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
-                                    <div className="mb-3 flex items-baseline justify-between gap-3">
-                                        <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
-                                        {layer.description ? <p className="text-xs text-zinc-500">{layer.description}</p> : null}
-                                    </div>
+                                    {layer.description ? <p className="mb-3 text-xs text-zinc-500">{layer.description}</p> : null}
                                     <KeyboardView config={viewerConfig} layer={layer} scale={0.72}/>
                                 </section>
                                 )
