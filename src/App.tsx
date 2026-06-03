@@ -106,7 +106,7 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
     const label = action?.label ?? ""
     const tone = action ? actionTone[action.type] : "text-zinc-600"
     const centerGuideTone = centerGuideKeyIds.has(layoutKey.id) ? "ring-1 ring-amber-300/60 ring-inset" : ""
-    const commonClass = `absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-[11px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out ${tone} ${
+    const commonClass = `absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-center text-[11px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out ${tone} ${
         selected ? "border-cyan-300/50 bg-cyan-400/15" : "border-white/[0.055]"
     } ${centerGuideTone} ${interactive ? "hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300/70" : ""}`
     const style: CSSProperties = {
