@@ -1,3 +1,5 @@
+// noinspection SpellCheckingInspection
+
 import type {KeyboardAction, KeyboardConfiguration, KeyboardLayer, KeyboardMacro, LayoutKey} from "./keyboardConfig"
 
 type UnknownRecord = Record<string, unknown>
@@ -100,20 +102,20 @@ const azertyBaseMap: Record<string, string> = {
     KC_NONUS_BSLASH: "<",
     KC_BSLS: "*",
     KC_BACKSLASH: "*",
-    KC_KP_0: "Num 0",
-    KC_KP_1: "Num 1",
-    KC_KP_2: "Num 2",
-    KC_KP_3: "Num 3",
-    KC_KP_4: "Num 4",
-    KC_KP_5: "Num 5",
-    KC_KP_6: "Num 6",
-    KC_KP_7: "Num 7",
-    KC_KP_8: "Num 8",
-    KC_KP_9: "Num 9",
-    KC_KP_DOT: "Num .",
-    KC_KP_SLASH: "Num /",
-    KC_KP_MINUS: "Num -",
-    KC_KP_ASTERISK: "Num *",
+    KC_KP_0: "0",
+    KC_KP_1: "1",
+    KC_KP_2: "2",
+    KC_KP_3: "3",
+    KC_KP_4: "4",
+    KC_KP_5: "5",
+    KC_KP_6: "6",
+    KC_KP_7: "7",
+    KC_KP_8: "8",
+    KC_KP_9: "9",
+    KC_KP_DOT: ".",
+    KC_KP_SLASH: "/",
+    KC_KP_MINUS: "-",
+    KC_KP_ASTERISK: "*",
     KC_F1: "F1",
     KC_F2: "F2",
     KC_F3: "F3",
@@ -149,6 +151,8 @@ const azertyAltGrMap: Record<string, string> = {
     KC_7: "`",
     KC_8: "\\",
     KC_MINUS: "]",
+    KC_EQUAL: "}",
+    KC_EQL: "}",
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -179,7 +183,8 @@ function readableLabel(raw: string): string {
 
     const altMatch = raw.match(/^LALT\((.+)\)$/)
     if (altMatch) {
-        return `Alt+${readableLabel(altMatch[1])}`
+        const inner = altMatch[1]
+        return azertyAltGrMap[inner] ?? `Alt+${readableLabel(inner)}`
     }
 
     const ctrlShiftMatch = raw.match(/^C_S\((.+)\)$/)

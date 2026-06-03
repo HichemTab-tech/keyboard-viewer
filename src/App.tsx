@@ -10,7 +10,7 @@ const actionTone: Record<KeyboardAction["type"], string> = {
     layer: "text-cyan-200",
     macro: "text-amber-200",
     combo: "text-emerald-200",
-    special: "text-zinc-500",
+    special: "text-zinc-200",
     tapDance: "text-fuchsia-200",
     holdTap: "text-sky-200",
     oneShot: "text-violet-200",
@@ -18,6 +18,8 @@ const actionTone: Record<KeyboardAction["type"], string> = {
     encoder: "text-orange-200",
     override: "text-rose-200",
 }
+
+const centerGuideKeyIds = new Set(["L11", "L12", "L13", "L14", "R11", "R12", "R13", "R14"])
 
 function makeTextAction(label: string, description?: string): KeyboardAction {
     const cleanLabel = label.trim()
@@ -74,6 +76,14 @@ function describeAction(action?: KeyboardAction) {
     return action.description || "No description yet."
 }
 
+function getMacroDetails(config: KeyboardConfiguration, action?: KeyboardAction) {
+    if (!action || action.type !== "macro") {
+        return null
+    }
+
+    return config.macros?.find((macro) => macro.id === action.macroId) ?? null
+}
+
 function compactLayerName(layer: KeyboardLayer | undefined, index: number) {
     return layer?.name || `M${index}`
 }
@@ -94,9 +104,10 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
     const height = unit * (layoutKey.h ?? 1)
     const label = action?.label ?? ""
     const tone = action ? actionTone[action.type] : "text-zinc-600"
+    const centerGuideTone = centerGuideKeyIds.has(layoutKey.id) ? "ring-1 ring-amber-300/60 ring-inset" : ""
     const commonClass = `absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-[10px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out ${tone} ${
         selected ? "border-cyan-300/50 bg-cyan-400/15" : "border-white/[0.055]"
-    } ${interactive ? "hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300/70" : ""}`
+    } ${centerGuideTone} ${interactive ? "hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300/70" : ""}`
     const style: CSSProperties = {
         left: origin.x + layoutKey.x * (unit + gap),
         top: origin.y + layoutKey.y * (unit + gap),
@@ -200,6 +211,7 @@ export default function Home() {
     const activeLayer = viewerConfig.layers.find((layer) => layer.id === activeLayerId) ?? viewerConfig.layers[0]
     const activeLayerIndex = Math.max(0, viewerConfig.layers.findIndex((layer) => layer.id === activeLayer?.id))
     const selectedAction = activeLayer?.keys[selectedKeyId]
+    const selectedMacro = getMacroDetails(viewerConfig, selectedAction)
 
     useEffect(() => {
         const updateScale = () => {
@@ -342,6 +354,19 @@ export default function Home() {
                                     <KeyboardView config={viewerConfig} layer={layer} scale={0.78}/>
                                 </section>
                             ))}
+                            {viewerConfig.macros && viewerConfig.macros.length > 0 ? (
+                                <section className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
+                                    <h2 className="mb-2 text-sm font-semibold text-zinc-100">Macros</h2>
+                                    <div className="grid gap-2 text-xs text-zinc-300">
+                                        {viewerConfig.macros.map((macro) => (
+                                            <div key={macro.id} className="rounded border border-white/[0.06] bg-black/10 p-2">
+                                                <p className="font-semibold">{macro.name}</p>
+                                                <p className="mt-1 text-zinc-400">{macro.steps.join(" -> ")}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            ) : null}
                         </div>
                     )}
                 </div>
@@ -420,6 +445,12 @@ export default function Home() {
                                     <span className="text-xs text-zinc-500">{selectedAction ? formatActionType(selectedAction.type) : "Empty"}</span>
                                 </div>
                                 <p className="mt-1 text-xs leading-relaxed">{describeAction(selectedAction)}</p>
+                                {selectedMacro ? (
+                                    <div className="mt-2 rounded border border-amber-300/20 bg-amber-300/10 p-2">
+                                        <p className="text-xs font-semibold text-amber-100">{selectedMacro.name}</p>
+                                        <p className="mt-1 text-xs text-amber-100/80">{selectedMacro.steps.join(" -> ")}</p>
+                                    </div>
+                                ) : null}
                             </div>
                         </div>
                     </Panel>
