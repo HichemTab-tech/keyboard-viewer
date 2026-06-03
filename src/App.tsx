@@ -206,12 +206,14 @@ export default function Home() {
     const [activeLayerId, setActiveLayerId] = useState(keyboardConfig.layers[0]?.id ?? "")
     const [selectedKeyId, setSelectedKeyId] = useState(keyboardConfig.layout.halves[0]?.keys[0]?.id ?? "")
     const [status, setStatus] = useState("Editing bundled sample configuration.")
+    const [previewLayerIds, setPreviewLayerIds] = useState<string[]>(() => keyboardConfig.layers.map((layer) => layer.id))
     const previewRef = useRef<HTMLDivElement>(null)
 
     const activeLayer = viewerConfig.layers.find((layer) => layer.id === activeLayerId) ?? viewerConfig.layers[0]
     const activeLayerIndex = Math.max(0, viewerConfig.layers.findIndex((layer) => layer.id === activeLayer?.id))
     const selectedAction = activeLayer?.keys[selectedKeyId]
     const selectedMacro = getMacroDetails(viewerConfig, selectedAction)
+    const previewLayers = viewerConfig.layers.filter((layer) => previewLayerIds.includes(layer.id))
 
     useEffect(() => {
         const updateScale = () => {
@@ -280,10 +282,23 @@ export default function Home() {
             setViewerConfig(nextConfig)
             setActiveLayerId(nextConfig.layers[0]?.id ?? "")
             setSelectedKeyId(nextConfig.layout.halves[0]?.keys[0]?.id ?? "")
+            setPreviewLayerIds(nextConfig.layers.map((layer) => layer.id))
             setStatus(`Imported ${file.name}.${isVialBackup(parsed) ? " Converted from Vial backup." : ""}`)
         } catch (error) {
             setStatus(error instanceof Error ? error.message : "Could not import this file.")
         }
+    }
+
+    function togglePreviewLayer(layerId: string) {
+        setPreviewLayerIds((current) =>
+            current.includes(layerId)
+                ? (current.length > 1 ? current.filter((id) => id !== layerId) : current)
+                : [...current, layerId],
+        )
+    }
+
+    function showAllPreviewLayers() {
+        setPreviewLayerIds(viewerConfig.layers.map((layer) => layer.id))
     }
 
     async function exportPreviewImage() {
@@ -345,7 +360,9 @@ export default function Home() {
                         />
                     ) : (
                         <div ref={previewRef} className="grid w-full max-w-[900px] gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:p-0">
-                            {viewerConfig.layers.map((layer, index) => (
+                            {previewLayers.map((layer) => {
+                                const index = viewerConfig.layers.findIndex((candidate) => candidate.id === layer.id)
+                                return (
                                 <section key={layer.id} className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
                                     <div className="mb-3 flex items-baseline justify-between gap-3">
                                         <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
@@ -353,7 +370,8 @@ export default function Home() {
                                     </div>
                                     <KeyboardView config={viewerConfig} layer={layer} scale={0.78}/>
                                 </section>
-                            ))}
+                                )
+                            })}
                             {viewerConfig.macros && viewerConfig.macros.length > 0 ? (
                                 <section className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
                                     <h2 className="mb-2 text-sm font-semibold text-zinc-100">Macros</h2>
@@ -456,6 +474,32 @@ export default function Home() {
                     </Panel>
 
                     <Panel title="Preview export">
+                        <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
+                            {viewerConfig.layers.map((layer, index) => {
+                                const visible = previewLayerIds.includes(layer.id)
+                                return (
+                                    <button
+                                        key={layer.id}
+                                        type="button"
+                                        className={`rounded-md border px-2 py-1.5 transition ${
+                                            visible
+                                                ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                                                : "border-white/[0.06] bg-black/10 text-zinc-500"
+                                        }`}
+                                        onClick={() => togglePreviewLayer(layer.id)}
+                                    >
+                                        {compactLayerName(layer, index)}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        <button
+                            type="button"
+                            className="mb-3 w-full rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]"
+                            onClick={showAllPreviewLayers}
+                        >
+                            Show all preview layers
+                        </button>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                             <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={() => void exportPreviewImage()}>
                                 PNG
