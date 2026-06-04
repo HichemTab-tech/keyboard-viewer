@@ -379,8 +379,8 @@ export default function Home() {
         <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200 print:overflow-visible">
             <div className={`mx-auto flex min-h-screen w-full flex-col justify-center gap-6 px-4 py-6 print:block print:min-h-0 print:max-w-none print:p-0 ${
                 mode === "preview" && isPreviewSidebarHidden
-                    ? "max-w-[2400px]"
-                    : "max-w-6xl lg:grid lg:grid-cols-[1fr_300px] lg:items-center"
+                    ? "max-w-[2800px]"
+                    : "max-w-6xl lg:grid lg:grid-cols-[1fr_200px] lg:items-center"
             }`}>
                 <div className="flex min-w-0 flex-col items-center gap-5 print:block">
                     <header className="w-full max-w-[760px] print:hidden">
@@ -430,7 +430,7 @@ export default function Home() {
                             ref={previewRef}
                             className={`grid w-full gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:grid-cols-1 print:p-0 ${
                                 previewUsesGrid
-                                    ? "max-w-[2200px] grid-cols-1 md:grid-cols-2 2xl:grid-cols-3"
+                                    ? "max-w-[3000px] grid-cols-1 md:grid-cols-2 [@media(min-width:2600px)]:grid-cols-3"
                                     : "max-w-[900px] grid-cols-1"
                             }`}
                         >
@@ -441,7 +441,7 @@ export default function Home() {
                                         <div className="mb-3 flex items-baseline justify-between gap-3">
                                             <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
                                         </div>
-                                        <KeyboardView config={viewerConfig} layer={layer} scale={0.72}/>
+                                        <KeyboardView config={viewerConfig} layer={layer} scale={1}/>
                                         <div className="flex items-baseline justify-between">
                                             {layer.description ? <p className="text-xs text-zinc-500">{layer.description}</p> : null}
                                         </div>
