@@ -158,7 +158,7 @@ function KeyboardView({config, layer, selectedKeyId, onSelectKey, scale = 1, int
     }
 
     return (
-        <div style={{width: config.layout.width * effectiveScale, height: config.layout.height * effectiveScale}}>
+        <div style={{width: config.layout.width * effectiveScale, height: config.layout.height * effectiveScale}} className="self-center">
             <div className="relative" style={style}>
                 {config.layout.halves.map((half) =>
                     half.keys.map((layoutKey) => (
@@ -430,16 +430,22 @@ export default function Home() {
                             ref={previewRef}
                             className={`grid w-full gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:grid-cols-1 print:p-0 ${
                                 previewUsesGrid
-                                    ? "max-w-[2100px] grid-cols-1 md:grid-cols-2 2xl:grid-cols-3"
+                                    ? "max-w-[2200px] grid-cols-1 md:grid-cols-2 2xl:grid-cols-3"
                                     : "max-w-[900px] grid-cols-1"
                             }`}
                         >
                             {previewLayers.map((layer) => {
+                                const index = viewerConfig.layers.findIndex((candidate) => candidate.id === layer.id)
                                 return (
-                                <section key={layer.id} className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid">
-                                    {layer.description ? <p className="mb-3 text-xs text-zinc-500">{layer.description}</p> : null}
-                                    <KeyboardView config={viewerConfig} layer={layer} scale={0.82}/>
-                                </section>
+                                    <section key={layer.id} className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid flex flex-col justify-center">
+                                        <div className="mb-3 flex items-baseline justify-between gap-3">
+                                            <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
+                                        </div>
+                                        <KeyboardView config={viewerConfig} layer={layer} scale={0.72}/>
+                                        <div className="flex items-baseline justify-between">
+                                            {layer.description ? <p className="text-xs text-zinc-500">{layer.description}</p> : null}
+                                        </div>
+                                    </section>
                                 )
                             })}
                             {viewerConfig.macros && viewerConfig.macros.length > 0 ? (
