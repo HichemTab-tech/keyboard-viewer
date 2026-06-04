@@ -157,7 +157,8 @@ const azertyAltGrMap: Record<string, string> = {
 
 const readableLabelOverrides: Record<string, string> = {
     "C_S(KC_TAB)": "<< Pg",
-    "LCTL(KC_TAB)": "Pg >>"
+    "LCTL(KC_TAB)": "Pg >>",
+    "LSFT(KC_TAB)": "<< Tab"
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
