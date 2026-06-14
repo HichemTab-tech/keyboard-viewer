@@ -100,6 +100,14 @@ type KeyProps = {
     onSelect?: () => void
 }
 
+const FallbackSvg = () => {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 5.5H11L8 10.5L5 5.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+    )
+}
+
 function Key({layoutKey, action, origin, unit, gap, selected = false, interactive = false, onSelect}: KeyProps) {
     const width = unit * (layoutKey.w ?? 1)
     const height = unit * (layoutKey.h ?? 1)
@@ -117,10 +125,12 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
         transform: `rotate(${layoutKey.rotation ?? 0}deg)`,
     }
 
+    const labelContent = (action && "value" in action && action.value === "transparent") ? <FallbackSvg/> : label;
+
     if (!interactive) {
         return (
             <div className={commonClass} style={style} title={action?.description}>
-                <span className="max-w-full px-1 leading-tight">{label}</span>
+                <span className="max-w-full px-1 leading-tight">{labelContent}</span>
             </div>
         )
     }
@@ -134,7 +144,7 @@ function Key({layoutKey, action, origin, unit, gap, selected = false, interactiv
             style={style}
             title={action?.description ?? "Empty key"}
         >
-            <span className="max-w-full px-1 leading-tight">{label}</span>
+            <span className="max-w-full px-1 leading-tight">{labelContent}</span>
         </button>
     )
 }
