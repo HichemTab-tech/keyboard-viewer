@@ -21,8 +21,11 @@ export function KeyLegend({action}: {action?: KeyboardAction}) {
         return null
     }
 
+    const densityClass = action.label.length > 8 ? "key-legend--dense" : ""
+    const soloClass = action.legend ? "" : "key-legend--solo"
+
     return (
-        <span className="key-legend">
+        <span className={`key-legend ${densityClass} ${soloClass}`.trim()}>
             <span className="key-legend__primary">{action.label}</span>
             {action.legend ? <span className="key-legend__secondary">{action.legend}</span> : null}
         </span>

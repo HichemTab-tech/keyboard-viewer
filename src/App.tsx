@@ -84,8 +84,8 @@ function meaningfulPreviewLayerIds(config: KeyboardConfiguration) {
 
 function Panel({title, children}: {title: string; children: ReactNode}) {
     return (
-        <section className="rounded-md border border-white/[0.06] bg-[#333333]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{title}</h2>
+        <section className="control-panel">
+            <h2 className="control-panel__title">{title}</h2>
             {children}
         </section>
     )
@@ -168,7 +168,7 @@ export default function Home() {
         }))
     }
 
-    function updateSelectedKey(label: string, description = selectedAction?.description) {
+    function updateSelectedLabel(label: string) {
         if (!activeLayer) {
             return
         }
@@ -177,14 +177,29 @@ export default function Home() {
             ...layer,
             keys: {
                 ...layer.keys,
-                [selectedKeyId]: makeTextAction(label, description),
+                [selectedKeyId]: selectedAction
+                    ? {...selectedAction, label: label.trim()}
+                    : makeTextAction(label),
             },
         }))
         setStatus(`Saved ${selectedKeyId} on ${activeLayer.name}.`)
     }
 
     function updateSelectedDescription(description: string) {
-        updateSelectedKey(selectedAction?.label ?? "", description)
+        if (!activeLayer) {
+            return
+        }
+
+        updateLayer(activeLayer.id, (layer) => ({
+            ...layer,
+            keys: {
+                ...layer.keys,
+                [selectedKeyId]: selectedAction
+                    ? {...selectedAction, description: description.trim() || undefined}
+                    : makeTextAction("", description),
+            },
+        }))
+        setStatus(`Updated ${selectedKeyId} on ${activeLayer.name}.`)
     }
 
     function updateLayerDescription(description: string) {
@@ -241,13 +256,19 @@ export default function Home() {
             return
         }
 
-        const dataUrl = await toPng(previewRef.current, {
-            backgroundColor: "#404040",
-            pixelRatio: 2,
-        })
+        try {
+            setStatus("Rendering keyboard-preview.png…")
+            await document.fonts.ready
+            const dataUrl = await toPng(previewRef.current, {
+                backgroundColor: "#111318",
+                pixelRatio: 2,
+            })
 
-        downloadDataUrl("keyboard-preview.png", dataUrl)
-        setStatus("Exported keyboard-preview.png.")
+            downloadDataUrl("keyboard-preview.png", dataUrl)
+            setStatus("Exported keyboard-preview.png.")
+        } catch {
+            setStatus("Could not export the preview image. Try fewer layers or a smaller browser window.")
+        }
     }
 
     function clearPersistedConfig() {
@@ -266,27 +287,27 @@ export default function Home() {
     }
 
     return (
-        <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200 print:overflow-visible">
-            <div className={`mx-auto flex min-h-screen w-full flex-col justify-center gap-6 px-4 py-6 print:block print:min-h-0 print:max-w-none print:p-0 ${
+        <main className="app-shell min-h-screen overflow-hidden text-zinc-200 print:overflow-visible">
+            <div className={`app-layout mx-auto flex min-h-screen w-full flex-col justify-start gap-7 px-5 py-8 print:block print:min-h-0 print:max-w-none print:p-0 ${
                 mode === "preview" && isPreviewSidebarHidden
                     ? "max-w-[2480px]"
-                    : "max-w-6xl lg:grid lg:grid-cols-[1fr_200px] lg:items-center"
+                    : "max-w-[1320px] lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start"
             }`}>
-                <div className="flex min-w-0 flex-col items-center gap-5 print:block">
-                    <header className="w-full max-w-[760px] print:hidden">
-                        <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Keyboard layout viewer</p>
+                <div className="flex min-w-0 flex-col items-center gap-6 print:block">
+                    <header className={`app-header w-full print:hidden ${previewUsesGrid ? "max-w-[2440px]" : "max-w-[820px]"}`}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/65">Keyboard layout viewer</p>
                         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
                             <div>
-                                <h1 className="text-xl font-semibold text-zinc-100">{viewerConfig.name}</h1>
-                                {activeLayer?.description ? <p className="mt-1 text-sm text-zinc-500">{activeLayer.description}</p> : null}
+                                <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{viewerConfig.name}</h1>
+                                {activeLayer?.description ? <p className="mt-1 text-sm text-zinc-400">{activeLayer.description}</p> : null}
                             </div>
-                            <div className="flex rounded-md border border-white/[0.06] bg-black/10 p-1">
+                            <div className="mode-switch">
                                 {(["edit", "preview"] as const).map((nextMode) => (
                                     <button
                                         key={nextMode}
                                         type="button"
-                                        className={`rounded px-3 py-1.5 text-sm capitalize transition ${
-                                            mode === nextMode ? "bg-cyan-300/15 text-cyan-100" : "text-zinc-500 hover:text-zinc-200"
+                                        className={`mode-switch__button ${
+                                            mode === nextMode ? "mode-switch__button--active" : ""
                                         }`}
                                         onClick={() => setMode(nextMode)}
                                     >
@@ -297,7 +318,7 @@ export default function Home() {
                             {mode === "preview" ? (
                                 <button
                                     type="button"
-                                    className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]"
+                                    className="soft-button"
                                     onClick={() => setIsPreviewSidebarHidden((current) => !current)}
                                 >
                                     {isPreviewSidebarHidden ? "Show sidebar" : "Hide sidebar"}
@@ -313,6 +334,7 @@ export default function Home() {
                                 layer={activeLayer}
                                 selectedKeyId={selectedKeyId}
                                 onSelectKey={setSelectedKeyId}
+                                maxScale={1.08}
                                 interactive
                             />
                         </div>
@@ -325,12 +347,13 @@ export default function Home() {
                                 const index = viewerConfig.layers.findIndex((candidate) => candidate.id === layer.id)
                                 return (
                                     <section key={layer.id} className="layer-preview-card">
-                                        <div className="mb-3 flex items-baseline justify-between gap-3">
-                                            <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
+                                        <div className="layer-preview-card__header">
+                                            <h2>{compactLayerName(layer, index)}</h2>
+                                            <span>{Object.values(layer.keys).filter((action) => action.label).length} assigned</span>
                                         </div>
-                                        <KeyboardView config={viewerConfig} layer={layer}/>
-                                        <div className="flex items-baseline justify-between">
-                                            {layer.description ? <p className="text-xs text-zinc-500">{layer.description}</p> : null}
+                                        <KeyboardView config={viewerConfig} layer={layer} maxScale={1.12}/>
+                                        <div className="layer-preview-card__footer">
+                                            {layer.description ? <p>{layer.description}</p> : null}
                                         </div>
                                     </section>
                                 )
@@ -352,7 +375,7 @@ export default function Home() {
                     )}
                 </div>
 
-                <aside className={`grid gap-3 lg:self-center print:hidden ${mode === "preview" && isPreviewSidebarHidden ? "hidden" : ""}`}>
+                <aside className={`control-sidebar grid gap-3 lg:self-center print:hidden ${mode === "preview" && isPreviewSidebarHidden ? "hidden" : ""}`}>
                     <Panel title="Config">
                         <div className="grid gap-2 text-xs text-zinc-500">
                             <div className="grid grid-cols-2 gap-2">
@@ -371,7 +394,7 @@ export default function Home() {
                             >
                                 Delete saved local data
                             </button>
-                            <p>{status}</p>
+                            <p className="status-copy" role="status">{status}</p>
                         </div>
                     </Panel>
 
@@ -414,7 +437,7 @@ export default function Home() {
                                 <input
                                     className="mt-1 w-full rounded-md border border-white/[0.06] bg-black/15 px-3 py-2 text-sm text-zinc-200 outline-none transition placeholder:text-zinc-600 focus:border-cyan-300/40"
                                     value={selectedAction?.label ?? ""}
-                                    onChange={(event) => updateSelectedKey(event.target.value)}
+                                    onChange={(event) => updateSelectedLabel(event.target.value)}
                                     placeholder="What should be written on this key?"
                                 />
                             </label>
@@ -432,7 +455,13 @@ export default function Home() {
                                     <p className="text-base font-semibold text-zinc-100">{selectedAction?.label || "Empty"}</p>
                                     <span className="text-xs text-zinc-500">{selectedAction ? formatActionType(selectedAction.type) : "Empty"}</span>
                                 </div>
+                                {selectedAction?.legend ? <p className="mt-1 text-xs font-medium text-cyan-200/80">{selectedAction.legend}</p> : null}
                                 <p className="mt-1 text-xs leading-relaxed">{describeAction(selectedAction)}</p>
+                                {selectedAction?.metadata?.source ? (
+                                    <code className="mt-2 block overflow-hidden text-ellipsis rounded bg-black/20 px-2 py-1 text-[10px] text-zinc-500">
+                                        {String(selectedAction.metadata.source)}
+                                    </code>
+                                ) : null}
                                 {selectedMacro ? (
                                     <div className="mt-2 rounded border border-amber-300/20 bg-amber-300/10 p-2">
                                         <p className="text-xs font-semibold text-amber-100">{selectedMacro.name}</p>

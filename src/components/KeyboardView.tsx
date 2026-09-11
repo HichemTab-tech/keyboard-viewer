@@ -3,6 +3,7 @@ import type {KeyboardAction, KeyboardConfiguration, KeyboardLayer, LayoutKey} fr
 import {KeyLegend} from "./KeyLegend"
 
 const centerGuideKeyIds = new Set(["L11", "L12", "L13", "L14", "R11", "R12", "R13", "R14"])
+const keyboardTopInset = 30
 
 type KeyProps = {
     layoutKey: LayoutKey
@@ -81,10 +82,11 @@ export function KeyboardView({config, layer, selectedKeyId, onSelectKey, maxScal
 
     const scale = Math.min(maxScale, frameWidth / config.layout.width)
     const renderedWidth = config.layout.width * scale
-    const renderedHeight = config.layout.height * scale
+    const canvasHeight = config.layout.height + keyboardTopInset
+    const renderedHeight = canvasHeight * scale
     const canvasStyle: CSSProperties = {
         width: config.layout.width,
-        height: config.layout.height,
+        height: canvasHeight,
         marginLeft: Math.max(0, (frameWidth - renderedWidth) / 2),
         transform: `scale(${scale})`,
         transformOrigin: "top left",
@@ -103,7 +105,7 @@ export function KeyboardView({config, layer, selectedKeyId, onSelectKey, maxScal
                         key={layoutKey.id}
                         layoutKey={layoutKey}
                         action={layer.keys[layoutKey.id]}
-                        origin={half.origin}
+                        origin={{x: half.origin.x, y: half.origin.y + keyboardTopInset}}
                         unit={config.layout.unit}
                         gap={config.layout.gap}
                         selected={selectedKeyId === layoutKey.id}
