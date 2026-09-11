@@ -5,6 +5,7 @@ export type KeyboardAction =
         label: string
         legend?: string
         description?: string
+        metadata?: Record<string, string | number | boolean>
     }
     | {
         type: "layer"
@@ -13,6 +14,7 @@ export type KeyboardAction =
         label: string
         legend?: string
         description?: string
+        metadata?: Record<string, string | number | boolean>
     }
     | {
         type: "macro"
@@ -20,6 +22,7 @@ export type KeyboardAction =
         label: string
         legend?: string
         description?: string
+        metadata?: Record<string, string | number | boolean>
     }
     | {
         type: "combo"
@@ -27,6 +30,7 @@ export type KeyboardAction =
         label: string
         legend?: string
         description?: string
+        metadata?: Record<string, string | number | boolean>
     }
     | {
         type: "special"
@@ -34,6 +38,7 @@ export type KeyboardAction =
         label: string
         legend?: string
         description?: string
+        metadata?: Record<string, string | number | boolean>
     }
     | {
         type: "tapDance" | "holdTap" | "oneShot" | "mouse" | "encoder" | "override"
