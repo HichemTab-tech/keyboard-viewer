@@ -251,15 +251,26 @@ export default function Home() {
         setPreviewLayerIds(viewerConfig.layers.map((layer) => layer.id))
     }
 
-    async function exportPreviewImage() {
-        if (!previewRef.current) {
-            return
-        }
+    async function preparePreviewExport() {
+        setMode("preview")
+        setIsPreviewSidebarHidden(true)
 
+        await new Promise<void>((resolve) => window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => resolve())
+        }))
+    }
+
+    async function exportPreviewImage() {
         try {
             setStatus("Rendering keyboard-preview.png…")
+            await preparePreviewExport()
             await document.fonts.ready
-            const dataUrl = await toPng(previewRef.current, {
+            const preview = previewRef.current
+            if (!preview) {
+                throw new Error("Preview did not render.")
+            }
+
+            const dataUrl = await toPng(preview, {
                 backgroundColor: "#111318",
                 pixelRatio: 2,
             })
@@ -280,10 +291,10 @@ export default function Home() {
         }
     }
 
-    function exportPreviewPdf() {
-        setMode("preview")
+    async function exportPreviewPdf() {
         setStatus("Use the browser print dialog to save the preview as PDF.")
-        window.setTimeout(() => window.print(), 100)
+        await preparePreviewExport()
+        window.print()
     }
 
     return (
@@ -503,7 +514,7 @@ export default function Home() {
                             <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={() => void exportPreviewImage()}>
                                 PNG
                             </button>
-                            <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={exportPreviewPdf}>
+                            <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={() => void exportPreviewPdf()}>
                                 PDF
                             </button>
                         </div>

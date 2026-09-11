@@ -4,6 +4,7 @@ import {KeyLegend} from "./KeyLegend"
 
 const centerGuideKeyIds = new Set(["L11", "L12", "L13", "L14", "R11", "R12", "R13", "R14"])
 const keyboardTopInset = 30
+const keyboardSideInset = 16
 
 type KeyProps = {
     layoutKey: LayoutKey
@@ -64,7 +65,8 @@ type KeyboardViewProps = {
 
 export function KeyboardView({config, layer, selectedKeyId, onSelectKey, maxScale = 1, interactive = false}: KeyboardViewProps) {
     const frameRef = useRef<HTMLDivElement>(null)
-    const [frameWidth, setFrameWidth] = useState(config.layout.width * maxScale)
+    const canvasWidth = config.layout.width + keyboardSideInset * 2
+    const [frameWidth, setFrameWidth] = useState(canvasWidth * maxScale)
 
     useEffect(() => {
         const frame = frameRef.current
@@ -80,12 +82,12 @@ export function KeyboardView({config, layer, selectedKeyId, onSelectKey, maxScal
         return () => observer.disconnect()
     }, [])
 
-    const scale = Math.min(maxScale, frameWidth / config.layout.width)
-    const renderedWidth = config.layout.width * scale
+    const scale = Math.min(maxScale, frameWidth / canvasWidth)
+    const renderedWidth = canvasWidth * scale
     const canvasHeight = config.layout.height + keyboardTopInset
     const renderedHeight = canvasHeight * scale
     const canvasStyle: CSSProperties = {
-        width: config.layout.width,
+        width: canvasWidth,
         height: canvasHeight,
         marginLeft: Math.max(0, (frameWidth - renderedWidth) / 2),
         transform: `scale(${scale})`,
@@ -105,7 +107,7 @@ export function KeyboardView({config, layer, selectedKeyId, onSelectKey, maxScal
                         key={layoutKey.id}
                         layoutKey={layoutKey}
                         action={layer.keys[layoutKey.id]}
-                        origin={{x: half.origin.x, y: half.origin.y + keyboardTopInset}}
+                        origin={{x: half.origin.x + keyboardSideInset, y: half.origin.y + keyboardTopInset}}
                         unit={config.layout.unit}
                         gap={config.layout.gap}
                         selected={selectedKeyId === layoutKey.id}

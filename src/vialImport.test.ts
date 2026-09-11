@@ -28,7 +28,10 @@ describe("Vial backup import", () => {
         expect(result.layers[0].keys.L14).toMatchObject({label: "T", legend: "Hold · Macro 3"})
         expect(result.layers[0].keys.LT2).toMatchObject({label: "Space", legend: "Hold · M1"})
         expect(result.layers[0].keys.RT2).toMatchObject({label: "Enter", legend: "Hold · M2"})
-        expect(result.layers[1].keys.L00).toMatchObject({label: "Ctrl + GUI + V"})
+        expect(result.layers[1].keys.L00).toMatchObject({
+            label: "Clipboard History",
+            legend: "Ctrl + GUI + V",
+        })
         expect(result.layers[1].keys.L01).toMatchObject({label: "Paste", legend: "GUI + V"})
         expect(result.layers[1].keys.L11).toMatchObject({label: "Copy", legend: "GUI + C"})
         expect(result.layers[1].keys.L21).toMatchObject({label: "Cut", legend: "GUI + X"})

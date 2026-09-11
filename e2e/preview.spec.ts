@@ -73,3 +73,55 @@ test("editing an imported description preserves its tap-hold behavior", async ({
     await expect(key.getByText("Hold · M1", {exact: true})).toBeVisible()
     await expect(key).toHaveAttribute("title", "My layer-tap key")
 })
+
+test("the edit keyboard keeps every key inside its frame at a narrow desktop width", async ({page}) => {
+    await page.setViewportSize({width: 884, height: 700})
+    await page.goto("/")
+    await page.locator('input[type="file"]').setInputFiles(fixture)
+
+    const bounds = await page.locator("[data-keyboard-frame]").first().evaluate((frame) => {
+        const frameRect = frame.getBoundingClientRect()
+        return [...frame.querySelectorAll<HTMLElement>("[data-key-id]")].map((key) => {
+            const keyRect = key.getBoundingClientRect()
+            return {
+                id: key.dataset.keyId,
+                insideHorizontally: keyRect.left >= frameRect.left && keyRect.right <= frameRect.right,
+            }
+        })
+    })
+
+    expect(bounds.filter(({insideHorizontally}) => !insideHorizontally)).toEqual([])
+})
+
+test("PNG export prepares and downloads the expanded sidebar-free preview", async ({page}) => {
+    await page.goto("/")
+    await page.locator('input[type="file"]').setInputFiles(fixture)
+
+    const downloadPromise = page.waitForEvent("download", {timeout: 5_000})
+    await page.getByRole("button", {name: "PNG", exact: true}).click()
+    const download = await downloadPromise
+
+    expect(download.suggestedFilename()).toBe("keyboard-preview.png")
+    await expect(page.locator(".preview-grid")).toHaveClass(/preview-grid--expanded/)
+    await expect(page.locator("aside")).toBeHidden()
+})
+
+test("PDF export waits for the expanded sidebar-free preview before printing", async ({page}) => {
+    await page.addInitScript(() => {
+        window.print = () => {
+            const preview = document.querySelector(".preview-grid")
+            const sidebar = document.querySelector("aside")
+            const expanded = preview?.classList.contains("preview-grid--expanded") ?? false
+            const sidebarHidden = sidebar instanceof HTMLElement && getComputedStyle(sidebar).display === "none"
+            document.documentElement.dataset.printLayout = `${expanded}:${sidebarHidden}`
+        }
+    })
+    await page.goto("/")
+    await page.locator('input[type="file"]').setInputFiles(fixture)
+
+    await page.getByRole("button", {name: "PDF", exact: true}).click()
+
+    await expect(page.locator(".preview-grid")).toHaveClass(/preview-grid--expanded/)
+    await expect(page.locator("aside")).toBeHidden()
+    await expect.poll(() => page.locator("html").getAttribute("data-print-layout")).toBe("true:true")
+})

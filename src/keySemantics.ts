@@ -166,6 +166,8 @@ const semanticShortcuts: Record<string, string> = {
     "LGUI(KC_V)": "Paste",
     "LGUI(KC_X)": "Cut",
     "LGUI(KC_Z)": "Undo",
+    "RCG(KC_V)": "Clipboard History",
+    "LCG(KC_V)": "Clipboard History",
 }
 
 function sourceMetadata(source: string, extra: Record<string, string | number | boolean> = {}) {
@@ -198,10 +200,12 @@ export function baseLabel(code: string) {
 function modifierAction(raw: string, wrapper: string, inner: string): KeyboardAction {
     const innerLabel = baseLabel(inner)
     const modifiers = modifierNames[wrapper]
-    const chord = [...modifiers, innerLabel].join(" + ")
+    const desktopNumber = ["LGUI", "RGUI"].includes(wrapper) ? inner.match(/^KC_(\d)$/)?.[1] : undefined
+    const chord = [...modifiers, desktopNumber ?? innerLabel].join(" + ")
     const shiftedLabel = modifiers.length === 1 && modifiers[0] === "Shift" ? azertyShiftMap[inner] : undefined
     const altGrLabel = modifiers.length === 1 && modifiers[0] === "AltGr" ? azertyAltGrMap[inner] : undefined
     const semanticLabel = semanticShortcuts[raw]
+        ?? (desktopNumber ? `Desktop ${desktopNumber === "0" ? "10" : desktopNumber}` : undefined)
     const label = semanticLabel ?? shiftedLabel ?? altGrLabel ?? chord
 
     return {

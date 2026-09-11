@@ -24,7 +24,22 @@ describe("Vial key semantics", () => {
     })
 
     test.each([
-        ["RCG(KC_V)", "Ctrl + GUI + V"],
+        ["LGUI(KC_1)", "Desktop 1", "GUI + 1"],
+        ["LGUI(KC_5)", "Desktop 5", "GUI + 5"],
+        ["LGUI(KC_0)", "Desktop 10", "GUI + 0"],
+    ])("names GUI number shortcuts by desktop for %s", (raw, label, legend) => {
+        expect(actionFromVialValue(raw)).toMatchObject({label, legend, metadata: {source: raw}})
+    })
+
+    test.each(["RCG(KC_V)", "LCG(KC_V)"])("names %s as clipboard history without hiding its chord", (raw) => {
+        expect(actionFromVialValue(raw)).toMatchObject({
+            label: "Clipboard History",
+            legend: "Ctrl + GUI + V",
+            metadata: {source: raw},
+        })
+    })
+
+    test.each([
         ["LSFT(KC_M)", "?"],
         ["RALT(KC_7)", "`"],
     ])("renders modifier expression %s compactly", (raw, label) => {
