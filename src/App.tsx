@@ -1,26 +1,11 @@
-import {useEffect, useRef, useState, type CSSProperties, type ReactNode} from "react"
+import {useEffect, useRef, useState, type ReactNode} from "react"
 import {toPng} from "html-to-image"
-import {keyboardConfig, type KeyboardAction, type KeyboardConfiguration, type KeyboardLayer, type LayoutKey} from "./keyboardConfig"
+import {KeyboardView} from "./components/KeyboardView"
+import {keyboardConfig, type KeyboardAction, type KeyboardConfiguration, type KeyboardLayer} from "./keyboardConfig"
 import {convertVialToKeyboardConfig, isVialBackup} from "./vialImport"
 
 type Mode = "edit" | "preview"
 const LOCAL_STORAGE_CONFIG_KEY = "keyboard-viewer.config"
-
-const actionTone: Record<KeyboardAction["type"], string> = {
-    keycode: "text-zinc-300",
-    layer: "text-cyan-200",
-    macro: "text-amber-200",
-    combo: "text-emerald-200",
-    special: "text-zinc-200",
-    tapDance: "text-fuchsia-200",
-    holdTap: "text-sky-200",
-    oneShot: "text-violet-200",
-    mouse: "text-lime-200",
-    encoder: "text-orange-200",
-    override: "text-rose-200",
-}
-
-const centerGuideKeyIds = new Set(["L11", "L12", "L13", "L14", "R11", "R12", "R13", "R14"])
 
 function makeTextAction(label: string, description?: string): KeyboardAction {
     const cleanLabel = label.trim()
@@ -89,111 +74,18 @@ function compactLayerName(layer: KeyboardLayer | undefined, index: number) {
     return layer?.name || `M${index}`
 }
 
-type KeyProps = {
-    layoutKey: LayoutKey
-    action?: KeyboardAction
-    origin: {x: number; y: number}
-    unit: number
-    gap: number
-    selected?: boolean
-    interactive?: boolean
-    onSelect?: () => void
-}
+function meaningfulPreviewLayerIds(config: KeyboardConfiguration) {
+    const meaningful = config.layers.filter((layer) => Object.values(layer.keys).some((action) => (
+        action.type !== "special" || !["no", "transparent"].includes(action.value)
+    )))
 
-const FallbackSvg = () => {
-    return (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 5.5H11L8 10.5L5 5.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-        </svg>
-    )
-}
-
-function Key({layoutKey, action, origin, unit, gap, selected = false, interactive = false, onSelect}: KeyProps) {
-    const width = unit * (layoutKey.w ?? 1)
-    const height = unit * (layoutKey.h ?? 1)
-    const label = action?.label ?? ""
-    const tone = action ? actionTone[action.type] : "text-zinc-600"
-    const centerGuideTone = centerGuideKeyIds.has(layoutKey.id) ? "ring-1 ring-amber-300/60 ring-inset" : ""
-    const commonClass = `absolute grid place-items-center rounded-[5px] border bg-[#343434]/85 text-center text-[11px] font-medium shadow-[inset_0_0_0_2px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.035),0_1px_0_rgba(255,255,255,0.025)] transition duration-200 ease-out ${tone} ${
-        selected ? "border-cyan-300/50 bg-cyan-400/15" : "border-white/[0.055]"
-    } ${centerGuideTone} ${interactive ? "hover:-translate-y-0.5 hover:border-white/10 hover:bg-[#3d3d3d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300/70" : ""}`
-    const style: CSSProperties = {
-        left: origin.x + layoutKey.x * (unit + gap),
-        top: origin.y + layoutKey.y * (unit + gap),
-        width,
-        height,
-        transform: `rotate(${layoutKey.rotation ?? 0}deg)`,
-    }
-
-    const labelContent = (action && "value" in action && action.value === "transparent") ? <FallbackSvg/> : label;
-
-    if (!interactive) {
-        return (
-            <div className={commonClass} style={style} title={action?.description}>
-                <span className="max-w-full px-1 leading-tight">{labelContent}</span>
-            </div>
-        )
-    }
-
-    return (
-        <button
-            type="button"
-            aria-label={label ? `${layoutKey.id}: ${label}` : `${layoutKey.id}: empty`}
-            className={commonClass}
-            onClick={onSelect}
-            style={style}
-            title={action?.description ?? "Empty key"}
-        >
-            <span className="max-w-full px-1 leading-tight">{labelContent}</span>
-        </button>
-    )
-}
-
-type KeyboardViewProps = {
-    config: KeyboardConfiguration
-    layer: KeyboardLayer
-    selectedKeyId?: string
-    onSelectKey?: (keyId: string) => void
-    scale?: number
-    interactive?: boolean
-}
-
-function KeyboardView({config, layer, selectedKeyId, onSelectKey, scale = 1, interactive = false}: KeyboardViewProps) {
-    const effectiveScale = scale * 1.06
-    const style: CSSProperties = {
-        width: config.layout.width,
-        height: config.layout.height,
-        transform: `scale(${effectiveScale})`,
-        transformOrigin: "top left",
-    }
-
-    return (
-        <div style={{width: config.layout.width * effectiveScale, height: config.layout.height * effectiveScale}} className="self-center">
-            <div className="relative" style={style}>
-                {config.layout.halves.map((half) =>
-                    half.keys.map((layoutKey) => (
-                        <Key
-                            key={layoutKey.id}
-                            layoutKey={layoutKey}
-                            action={layer.keys[layoutKey.id]}
-                            origin={half.origin}
-                            unit={config.layout.unit}
-                            gap={config.layout.gap}
-                            selected={selectedKeyId === layoutKey.id}
-                            interactive={interactive}
-                            onSelect={() => onSelectKey?.(layoutKey.id)}
-                        />
-                    )),
-                )}
-            </div>
-        </div>
-    )
+    return (meaningful.length > 0 ? meaningful : config.layers.slice(0, 1)).map((layer) => layer.id)
 }
 
 function Panel({title, children}: {title: string; children: ReactNode}) {
     return (
-        <section className="rounded-md border border-white/[0.06] bg-[#333333]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{title}</h2>
+        <section className="control-panel">
+            <h2 className="control-panel__title">{title}</h2>
             {children}
         </section>
     )
@@ -237,7 +129,6 @@ export default function Home() {
     const initialStateRef = useRef(loadPersistedConfig())
     const [viewerConfig, setViewerConfig] = useState<KeyboardConfiguration>(initialStateRef.current.config)
     const [mode, setMode] = useState<Mode>("edit")
-    const [keyboardScale, setKeyboardScale] = useState(1)
     const [activeLayerId, setActiveLayerId] = useState(initialStateRef.current.config.layers[0]?.id ?? "")
     const [selectedKeyId, setSelectedKeyId] = useState(initialStateRef.current.config.layout.halves[0]?.keys[0]?.id ?? "")
     const [status, setStatus] = useState(
@@ -245,7 +136,7 @@ export default function Home() {
             ? "Loaded saved layout from local storage."
             : "Editing bundled sample configuration.",
     )
-    const [previewLayerIds, setPreviewLayerIds] = useState<string[]>(() => initialStateRef.current.config.layers.map((layer) => layer.id))
+    const [previewLayerIds, setPreviewLayerIds] = useState<string[]>(() => meaningfulPreviewLayerIds(initialStateRef.current.config))
     const [isPreviewSidebarHidden, setIsPreviewSidebarHidden] = useState(false)
     const previewRef = useRef<HTMLDivElement>(null)
     const hasHydratedConfigRef = useRef(false)
@@ -256,17 +147,6 @@ export default function Home() {
     const selectedMacro = getMacroDetails(viewerConfig, selectedAction)
     const previewLayers = viewerConfig.layers.filter((layer) => previewLayerIds.includes(layer.id))
     const previewUsesGrid = mode === "preview" && isPreviewSidebarHidden
-
-    useEffect(() => {
-        const updateScale = () => {
-            setKeyboardScale(Math.min(1, Math.max(0.42, (window.innerWidth - 360) / viewerConfig.layout.width)))
-        }
-
-        updateScale()
-        window.addEventListener("resize", updateScale)
-
-        return () => window.removeEventListener("resize", updateScale)
-    }, [viewerConfig.layout.width])
 
     useEffect(() => {
         if (!hasHydratedConfigRef.current) {
@@ -288,7 +168,7 @@ export default function Home() {
         }))
     }
 
-    function updateSelectedKey(label: string, description = selectedAction?.description) {
+    function updateSelectedLabel(label: string) {
         if (!activeLayer) {
             return
         }
@@ -297,14 +177,29 @@ export default function Home() {
             ...layer,
             keys: {
                 ...layer.keys,
-                [selectedKeyId]: makeTextAction(label, description),
+                [selectedKeyId]: selectedAction
+                    ? {...selectedAction, label: label.trim()}
+                    : makeTextAction(label),
             },
         }))
         setStatus(`Saved ${selectedKeyId} on ${activeLayer.name}.`)
     }
 
     function updateSelectedDescription(description: string) {
-        updateSelectedKey(selectedAction?.label ?? "", description)
+        if (!activeLayer) {
+            return
+        }
+
+        updateLayer(activeLayer.id, (layer) => ({
+            ...layer,
+            keys: {
+                ...layer.keys,
+                [selectedKeyId]: selectedAction
+                    ? {...selectedAction, description: description.trim() || undefined}
+                    : makeTextAction("", description),
+            },
+        }))
+        setStatus(`Updated ${selectedKeyId} on ${activeLayer.name}.`)
     }
 
     function updateLayerDescription(description: string) {
@@ -337,7 +232,7 @@ export default function Home() {
             setViewerConfig(nextConfig)
             setActiveLayerId(nextConfig.layers[0]?.id ?? "")
             setSelectedKeyId(nextConfig.layout.halves[0]?.keys[0]?.id ?? "")
-            setPreviewLayerIds(nextConfig.layers.map((layer) => layer.id))
+            setPreviewLayerIds(meaningfulPreviewLayerIds(nextConfig))
             setStatus(`Imported ${file.name}.${isVialBackup(parsed) ? " Converted from Vial backup." : ""}`)
         } catch (error) {
             setStatus(error instanceof Error ? error.message : "Could not import this file.")
@@ -356,18 +251,35 @@ export default function Home() {
         setPreviewLayerIds(viewerConfig.layers.map((layer) => layer.id))
     }
 
+    async function preparePreviewExport() {
+        setMode("preview")
+        setIsPreviewSidebarHidden(true)
+
+        await new Promise<void>((resolve) => window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => resolve())
+        }))
+    }
+
     async function exportPreviewImage() {
-        if (!previewRef.current) {
-            return
+        try {
+            setStatus("Rendering keyboard-preview.png…")
+            await preparePreviewExport()
+            await document.fonts.ready
+            const preview = previewRef.current
+            if (!preview) {
+                throw new Error("Preview did not render.")
+            }
+
+            const dataUrl = await toPng(preview, {
+                backgroundColor: "#111318",
+                pixelRatio: 2,
+            })
+
+            downloadDataUrl("keyboard-preview.png", dataUrl)
+            setStatus("Exported keyboard-preview.png.")
+        } catch {
+            setStatus("Could not export the preview image. Try fewer layers or a smaller browser window.")
         }
-
-        const dataUrl = await toPng(previewRef.current, {
-            backgroundColor: "#404040",
-            pixelRatio: 2,
-        })
-
-        downloadDataUrl("keyboard-preview.png", dataUrl)
-        setStatus("Exported keyboard-preview.png.")
     }
 
     function clearPersistedConfig() {
@@ -379,34 +291,34 @@ export default function Home() {
         }
     }
 
-    function exportPreviewPdf() {
-        setMode("preview")
+    async function exportPreviewPdf() {
         setStatus("Use the browser print dialog to save the preview as PDF.")
-        window.setTimeout(() => window.print(), 100)
+        await preparePreviewExport()
+        window.print()
     }
 
     return (
-        <main className="min-h-screen overflow-hidden bg-[#404040] text-zinc-200 print:overflow-visible">
-            <div className={`mx-auto flex min-h-screen w-full flex-col justify-center gap-6 px-4 py-6 print:block print:min-h-0 print:max-w-none print:p-0 ${
+        <main className="app-shell min-h-screen overflow-hidden text-zinc-200 print:overflow-visible">
+            <div className={`app-layout mx-auto flex min-h-screen w-full flex-col justify-start gap-7 px-5 py-8 print:block print:min-h-0 print:max-w-none print:p-0 ${
                 mode === "preview" && isPreviewSidebarHidden
-                    ? "max-w-[2800px]"
-                    : "max-w-6xl lg:grid lg:grid-cols-[1fr_200px] lg:items-center"
+                    ? "max-w-[2480px]"
+                    : "max-w-[1320px] lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start"
             }`}>
-                <div className="flex min-w-0 flex-col items-center gap-5 print:block">
-                    <header className="w-full max-w-[760px] print:hidden">
-                        <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Keyboard layout viewer</p>
+                <div className="flex min-w-0 flex-col items-center gap-6 print:block">
+                    <header className={`app-header w-full print:hidden ${previewUsesGrid ? "max-w-[2440px]" : "max-w-[820px]"}`}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/65">Keyboard layout viewer</p>
                         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
                             <div>
-                                <h1 className="text-xl font-semibold text-zinc-100">{viewerConfig.name}</h1>
-                                {activeLayer?.description ? <p className="mt-1 text-sm text-zinc-500">{activeLayer.description}</p> : null}
+                                <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{viewerConfig.name}</h1>
+                                {activeLayer?.description ? <p className="mt-1 text-sm text-zinc-400">{activeLayer.description}</p> : null}
                             </div>
-                            <div className="flex rounded-md border border-white/[0.06] bg-black/10 p-1">
+                            <div className="mode-switch">
                                 {(["edit", "preview"] as const).map((nextMode) => (
                                     <button
                                         key={nextMode}
                                         type="button"
-                                        className={`rounded px-3 py-1.5 text-sm capitalize transition ${
-                                            mode === nextMode ? "bg-cyan-300/15 text-cyan-100" : "text-zinc-500 hover:text-zinc-200"
+                                        className={`mode-switch__button ${
+                                            mode === nextMode ? "mode-switch__button--active" : ""
                                         }`}
                                         onClick={() => setMode(nextMode)}
                                     >
@@ -417,7 +329,7 @@ export default function Home() {
                             {mode === "preview" ? (
                                 <button
                                     type="button"
-                                    className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-sm text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]"
+                                    className="soft-button"
                                     onClick={() => setIsPreviewSidebarHidden((current) => !current)}
                                 >
                                     {isPreviewSidebarHidden ? "Show sidebar" : "Hide sidebar"}
@@ -427,39 +339,38 @@ export default function Home() {
                     </header>
 
                     {mode === "edit" ? (
-                        <KeyboardView
-                            config={viewerConfig}
-                            layer={activeLayer}
-                            selectedKeyId={selectedKeyId}
-                            onSelectKey={setSelectedKeyId}
-                            scale={keyboardScale}
-                            interactive
-                        />
+                        <div className="w-full max-w-[820px]">
+                            <KeyboardView
+                                config={viewerConfig}
+                                layer={activeLayer}
+                                selectedKeyId={selectedKeyId}
+                                onSelectKey={setSelectedKeyId}
+                                maxScale={1.08}
+                                interactive
+                            />
+                        </div>
                     ) : (
                         <div
                             ref={previewRef}
-                            className={`grid w-full gap-5 rounded-md bg-[#404040] p-4 print:max-w-none print:grid-cols-1 print:p-0 ${
-                                previewUsesGrid
-                                    ? "max-w-[3000px] grid-cols-1 md:grid-cols-2 [@media(min-width:2600px)]:grid-cols-3"
-                                    : "max-w-[900px] grid-cols-1"
-                            }`}
+                            className={`preview-grid ${previewUsesGrid ? "preview-grid--expanded" : "preview-grid--compact"}`}
                         >
                             {previewLayers.map((layer) => {
                                 const index = viewerConfig.layers.findIndex((candidate) => candidate.id === layer.id)
                                 return (
-                                    <section key={layer.id} className="rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid flex flex-col justify-center">
-                                        <div className="mb-3 flex items-baseline justify-between gap-3">
-                                            <h2 className="text-sm font-semibold text-zinc-100">{compactLayerName(layer, index)}</h2>
+                                    <section key={layer.id} className="layer-preview-card">
+                                        <div className="layer-preview-card__header">
+                                            <h2>{compactLayerName(layer, index)}</h2>
+                                            <span>{Object.values(layer.keys).filter((action) => action.label).length} assigned</span>
                                         </div>
-                                        <KeyboardView config={viewerConfig} layer={layer} scale={1}/>
-                                        <div className="flex items-baseline justify-between">
-                                            {layer.description ? <p className="text-xs text-zinc-500">{layer.description}</p> : null}
+                                        <KeyboardView config={viewerConfig} layer={layer} maxScale={1.12}/>
+                                        <div className="layer-preview-card__footer">
+                                            {layer.description ? <p>{layer.description}</p> : null}
                                         </div>
                                     </section>
                                 )
                             })}
                             {viewerConfig.macros && viewerConfig.macros.length > 0 ? (
-                                <section className={`rounded-md border border-white/[0.06] bg-[#383838] p-4 print:break-inside-avoid ${previewUsesGrid ? "md:col-span-2 2xl:col-span-3" : ""}`}>
+                                <section className="macro-preview-card">
                                     <h2 className="mb-2 text-sm font-semibold text-zinc-100">Macros</h2>
                                     <div className="grid gap-2 text-xs text-zinc-300">
                                         {viewerConfig.macros.map((macro) => (
@@ -475,7 +386,7 @@ export default function Home() {
                     )}
                 </div>
 
-                <aside className={`grid gap-3 lg:self-center print:hidden ${mode === "preview" && isPreviewSidebarHidden ? "hidden" : ""}`}>
+                <aside className={`control-sidebar grid gap-3 lg:self-center print:hidden ${mode === "preview" && isPreviewSidebarHidden ? "hidden" : ""}`}>
                     <Panel title="Config">
                         <div className="grid gap-2 text-xs text-zinc-500">
                             <div className="grid grid-cols-2 gap-2">
@@ -494,7 +405,7 @@ export default function Home() {
                             >
                                 Delete saved local data
                             </button>
-                            <p>{status}</p>
+                            <p className="status-copy" role="status">{status}</p>
                         </div>
                     </Panel>
 
@@ -537,7 +448,7 @@ export default function Home() {
                                 <input
                                     className="mt-1 w-full rounded-md border border-white/[0.06] bg-black/15 px-3 py-2 text-sm text-zinc-200 outline-none transition placeholder:text-zinc-600 focus:border-cyan-300/40"
                                     value={selectedAction?.label ?? ""}
-                                    onChange={(event) => updateSelectedKey(event.target.value)}
+                                    onChange={(event) => updateSelectedLabel(event.target.value)}
                                     placeholder="What should be written on this key?"
                                 />
                             </label>
@@ -555,7 +466,13 @@ export default function Home() {
                                     <p className="text-base font-semibold text-zinc-100">{selectedAction?.label || "Empty"}</p>
                                     <span className="text-xs text-zinc-500">{selectedAction ? formatActionType(selectedAction.type) : "Empty"}</span>
                                 </div>
+                                {selectedAction?.legend ? <p className="mt-1 text-xs font-medium text-cyan-200/80">{selectedAction.legend}</p> : null}
                                 <p className="mt-1 text-xs leading-relaxed">{describeAction(selectedAction)}</p>
+                                {selectedAction?.metadata?.source ? (
+                                    <code className="mt-2 block overflow-hidden text-ellipsis rounded bg-black/20 px-2 py-1 text-[10px] text-zinc-500">
+                                        {String(selectedAction.metadata.source)}
+                                    </code>
+                                ) : null}
                                 {selectedMacro ? (
                                     <div className="mt-2 rounded border border-amber-300/20 bg-amber-300/10 p-2">
                                         <p className="text-xs font-semibold text-amber-100">{selectedMacro.name}</p>
@@ -597,7 +514,7 @@ export default function Home() {
                             <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={() => void exportPreviewImage()}>
                                 PNG
                             </button>
-                            <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={exportPreviewPdf}>
+                            <button type="button" className="rounded-md border border-white/[0.06] bg-black/10 px-3 py-2 text-zinc-300 transition hover:border-white/15 hover:bg-white/[0.04]" onClick={() => void exportPreviewPdf()}>
                                 PDF
                             </button>
                         </div>
